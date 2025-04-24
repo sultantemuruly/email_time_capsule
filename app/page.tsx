@@ -1,7 +1,11 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { useAuth } from "@/context/auth-context";
 
 export default function App() {
+  const { login } = useAuth();
+
   return (
     <div className="flex items-center justify-center min-h-screen py-12 md:py-24 lg:py-32 xl:py-48">
       <div className="container px-4 md:px-6">
@@ -16,8 +20,12 @@ export default function App() {
             </p>
           </div>
           <div className="space-x-4">
-            <Button asChild size="lg">
-              <Link href="/signup">Get Started</Link>
+            <Button
+              onClick={login}
+              variant="outline"
+              className="bg-blue-700 text-white rounded-sm"
+            >
+              Get Started
             </Button>
           </div>
         </div>
