@@ -23,3 +23,7 @@ export type AuthContextType = {
   login: () => Promise<void>;
   logout: () => Promise<void>;
 };
+
+export type EmailSendFormProps = {
+  onSuccess?: () => void;
+};

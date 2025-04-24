@@ -14,11 +14,12 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
-import axios from "axios";
 import { useAuth } from "@/context/auth-context";
 import { Loader2 } from "lucide-react";
+import { EmailSendFormProps } from "@/lib/types";
+import { toast } from "sonner";
 
-export function EmailSendForm() {
+export function EmailSendForm({ onSuccess }: EmailSendFormProps) {
   const [recipient, setRecipient] = useState("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -66,42 +67,44 @@ export function EmailSendForm() {
     try {
       const token = await user.getIdToken();
 
-      const response = await axios.post(
-        "/api/emails",
-        {
+      const response = await fetch("/api/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
           recipient,
           title,
           content,
           date: format(scheduled, "yyyy-MM-dd"),
           time: format(scheduled, "HH:mm"),
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+        }),
+      });
 
-      if (response.status === 200 && response.data?.success) {
-        // Reset the form
+      if (response.ok) {
+        toast.success("Email scheduled successfully!");
+
+        onSuccess?.();
+
         setRecipient("");
         setTitle("");
         setContent("");
         setDate(null);
         setTime("12:00");
+      } else {
+        const errorData = await response.json();
+        const errMsg =
+          errorData.error || "Failed to schedule email. Try again.";
 
-        alert("Email scheduled successfully!");
-      } else {
-        setError("Failed to schedule email. Try again.");
+        setError(errMsg);
+        toast.error(errMsg);
       }
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.error || "Something went wrong.");
-        console.error("Axios error:", err);
-      } else {
-        setError("An unexpected error occurred.");
-        console.error("Unexpected error:", err);
-      }
+    } catch (err) {
+      const fallbackMessage = "An unexpected error occurred.";
+      setError(fallbackMessage);
+      console.error("Fetch error:", err);
+      toast.error(fallbackMessage);
     } finally {
       setLoading(false);
     }
