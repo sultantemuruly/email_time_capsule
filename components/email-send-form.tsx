@@ -74,11 +74,13 @@ export function EmailSendForm({ onSuccess }: EmailSendFormProps) {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
+          userId: user.uid,
           recipient,
           title,
           content,
           date: format(scheduled, "yyyy-MM-dd"),
           time: format(scheduled, "HH:mm"),
+          status: "Pending",
         }),
       });
 

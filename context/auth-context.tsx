@@ -16,7 +16,6 @@ import {
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
-import { createUserDoc } from "@/lib/user";
 import { AuthContextType } from "@/lib/types";
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -41,15 +40,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const result = await signInWithPopup(auth, googleProvider);
       const token = await getIdToken(result.user, true);
 
-      // Save user to Firestore
-      await createUserDoc({
-        uid: result.user.uid,
-        email: result.user.email || "",
+      // Save user via backend API
+      await fetch("/api/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          uid: result.user.uid,
+          email: result.user.email || "",
+        }),
       });
 
+      // Set session cookie
       const res = await fetch("/api/session", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ token }),
       });
 

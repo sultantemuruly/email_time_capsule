@@ -1,51 +1,66 @@
-import { NextRequest, NextResponse } from "next/server";
 import { adminDB } from "@/lib/firebase-admin";
-import { verifyIdToken } from "@/lib/firebase-admin";
-import { EmailStatus } from "@/lib/types";
+import { NextResponse } from "next/server";
+import { EmailData } from "@/lib/types";
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization");
+    const body:EmailData = await req.json();
+    console.log("Received email body:", body); // ✅ See what's actually sent
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { userId, recipient, title, content, date, time, status } = body;
 
-    const idToken = authHeader.split("Bearer ")[1];
-    const decodedToken = await verifyIdToken(idToken);
-
-    if (!decodedToken) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 403 });
-    }
-
-    const uid = decodedToken.uid;
-
-    const body = await req.json();
-    const { recipient, title, content, date, time } = body;
-
-    if (!recipient || !title || !content || !date || !time) {
+    if (
+      !userId ||
+      !recipient ||
+      !title ||
+      !content ||
+      !date ||
+      !time ||
+      !status
+    ) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Missing required email fields" },
         { status: 400 }
       );
     }
 
     await adminDB.collection("emails").add({
-      userId: uid,
+      userId,
       recipient,
       title,
       content,
       date,
       time,
-      status: "Pending" as EmailStatus,
+      status,
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("POST /api/emails error:", error);
+    console.error("Error adding email:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
     );
   }
+}
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const userId = searchParams.get("userId");
+
+  if (!userId) {
+    return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+  }
+
+  const snapshot = await adminDB
+    .collection("emails")
+    .where("userId", "==", userId)
+    .get();
+
+  const emails = snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+
+  return NextResponse.json({ emails });
 }
