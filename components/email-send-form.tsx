@@ -14,6 +14,9 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
+import axios from "axios";
+import { useAuth } from "@/context/auth-context";
+import { Loader2 } from "lucide-react";
 
 export function EmailSendForm() {
   const [recipient, setRecipient] = useState("");
@@ -22,6 +25,9 @@ export function EmailSendForm() {
   const [date, setDate] = useState<Date | null>(null);
   const [time, setTime] = useState("12:00");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const { user } = useAuth();
 
   const getCombinedDateTime = (): Date | null => {
     if (!date) return null;
@@ -29,28 +35,83 @@ export function EmailSendForm() {
     return setMinutes(setHours(date, hours), minutes);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+
     const now = new Date();
     const minTime = addMinutes(now, 5);
     const scheduled = getCombinedDateTime();
 
     if (!recipient || !title || !content || !scheduled) {
       setError("All fields are required.");
+      setLoading(false);
       return;
     }
 
     if (isBefore(scheduled, minTime)) {
       setError("Scheduled time must be at least 5 minutes in the future.");
+      setLoading(false);
       return;
     }
 
-    setError("");
-    console.log("Scheduled email:", { recipient, title, content, scheduled });
-    // send email or API call
+    if (!user) {
+      setError("You must be logged in to schedule an email.");
+      setLoading(false);
+      return;
+    }
+
+    setError(""); // Clear any previous error
+
+    try {
+      const token = await user.getIdToken();
+
+      const response = await axios.post(
+        "/api/emails",
+        {
+          recipient,
+          title,
+          content,
+          date: format(scheduled, "yyyy-MM-dd"),
+          time: format(scheduled, "HH:mm"),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status === 200 && response.data?.success) {
+        // Reset the form
+        setRecipient("");
+        setTitle("");
+        setContent("");
+        setDate(null);
+        setTime("12:00");
+
+        alert("Email scheduled successfully!");
+      } else {
+        setError("Failed to schedule email. Try again.");
+      }
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.error || "Something went wrong.");
+        console.error("Axios error:", err);
+      } else {
+        setError("An unexpected error occurred.");
+        console.error("Unexpected error:", err);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
+  return loading ? (
+    <div className="absolute inset-0 flex justify-center items-center bg-white/60 z-50">
+      <Loader2 className="h-6 w-6 animate-spin text-blue-700" />
+    </div>
+  ) : (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-xl mx-auto mt-10">
       <div>
         <Label className="py-2" htmlFor="recipient">

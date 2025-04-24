@@ -1,5 +1,6 @@
 import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
 import { db } from "./firebase";
+import { EmailData } from "./types";
 
 export const addEmail = async ({
   userId,
@@ -8,14 +9,8 @@ export const addEmail = async ({
   content,
   date,
   time,
-}: {
-  userId: string;
-  recipient: string;
-  title: string;
-  content: string;
-  date: string;
-  time: string;
-}) => {
+  status,
+}: EmailData) => {
   const emailsRef = collection(db, "emails");
   await addDoc(emailsRef, {
     userId,
@@ -24,6 +19,7 @@ export const addEmail = async ({
     content,
     date,
     time,
+    status,
   });
 };
 

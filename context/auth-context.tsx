@@ -17,13 +17,7 @@ import {
 import { auth, googleProvider } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { createUserDoc } from "@/lib/user";
-
-type AuthContextType = {
-  user: User | null;
-  loading: boolean;
-  login: () => Promise<void>;
-  logout: () => Promise<void>;
-};
+import { AuthContextType } from "@/lib/types";
 
 const AuthContext = createContext<AuthContextType | null>(null);
 

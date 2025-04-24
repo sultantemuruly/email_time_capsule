@@ -19,3 +19,6 @@ export const verifyIdToken = async (token: string) => {
     return null;
   }
 };
+
+export const adminAuth = admin.auth();
+export const adminDB = admin.firestore();

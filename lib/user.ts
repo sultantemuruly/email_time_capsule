@@ -1,7 +1,8 @@
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebase";
+import { UserData } from "./types";
 
-export const createUserDoc = async (user: { uid: string; email: string }) => {
+export const createUserDoc = async (user: UserData) => {
   const userRef = doc(db, "users", user.uid);
   const userSnap = await getDoc(userRef);
 
