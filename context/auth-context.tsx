@@ -16,9 +16,11 @@ import {
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
+import { createUserDoc } from "@/lib/user";
 
 type AuthContextType = {
   user: User | null;
+  loading: boolean;
   login: () => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -38,14 +40,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async () => {
-    if (auth.currentUser) return;
-
-    if (loading) return; // prevent multiple clicks
+    if (auth.currentUser || loading) return;
 
     try {
       setLoading(true);
       const result = await signInWithPopup(auth, googleProvider);
       const token = await getIdToken(result.user, true);
+
+      // Save user to Firestore
+      await createUserDoc({
+        uid: result.user.uid,
+        email: result.user.email || "",
+      });
 
       const res = await fetch("/api/session", {
         method: "POST",
@@ -74,7 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

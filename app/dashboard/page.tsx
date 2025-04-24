@@ -1,3 +1,5 @@
+"use client";
+
 import { EmailSendForm } from "@/components/email-send-form";
 import { Button } from "@/components/ui/button";
 
