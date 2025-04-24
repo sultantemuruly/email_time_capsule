@@ -12,7 +12,7 @@ import { auth, googleProvider } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
-export default function LoginPage() {
+export default function Login() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
 
@@ -31,8 +31,24 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      console.log("Google sign-in success:", result.user);
-      setUser(result.user);
+      const token = await result.user.getIdToken(true);
+
+      // Send token to server to set secure cookie
+      const res = await fetch("/api/session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token }),
+      });
+
+      if (res.ok) {
+        setUser(result.user);
+        console.log("Login success and cookie set");
+        router.push("/dashboard");
+      } else {
+        console.error("Failed to set session cookie");
+      }
     } catch (error) {
       console.error("Google sign-in error:", error);
     }
@@ -41,8 +57,14 @@ export default function LoginPage() {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
+      await fetch("/api/logout", {
+        method: "POST",
+      }); // Clear the __session cookie
+
       setUser(null);
       console.log("User signed out");
+
+      router.push("/");
     } catch (error) {
       console.error("Sign-out error:", error);
     }
@@ -58,7 +80,7 @@ export default function LoginPage() {
             width={32}
             height={32}
             className="rounded-full cursor-pointer"
-            // onClick={handleSignOut}
+            onClick={handleSignOut}
           />
         </div>
       ) : (
