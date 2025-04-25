@@ -18,13 +18,11 @@ export function Header() {
   const { user, login, logout, loading } = useAuth();
 
   return loading ? null : (
-    <header className="sticky px-10 top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
-        <div>
-          <span className="text-xl font-bold">Email Time Capsule</span>
-        </div>
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex items-center justify-between h-16 px-5 md:px-10 lg:px-20">
+        <div className="text-xl font-bold">Email Time Capsule</div>
 
-        <div>
+        <div className="flex items-center gap-2">
           {user ? (
             <div className="flex justify-center items-center gap-2">
               <Image

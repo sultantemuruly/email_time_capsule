@@ -12,6 +12,12 @@ export interface EmailData {
   status: EmailStatus;
 }
 
+export type EmailContainerProps = Omit<EmailData, "userId">;
+
+export type EmailSendFormProps = {
+  onSuccess?: () => void;
+};
+
 export interface UserData {
   uid: string;
   email: string;
@@ -22,8 +28,4 @@ export type AuthContextType = {
   loading: boolean;
   login: () => Promise<void>;
   logout: () => Promise<void>;
-};
-
-export type EmailSendFormProps = {
-  onSuccess?: () => void;
 };
