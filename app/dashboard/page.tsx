@@ -29,7 +29,7 @@ const DashboardPage = () => {
         if (data?.emails && Array.isArray(data.emails)) {
           const formattedEmails: EmailContainerProps[] = data.emails.map(
             (email: EmailData) => {
-              return { ...email }; // Make sure the data is properly formatted
+              return { ...email };
             }
           );
           setEmails(formattedEmails);
@@ -46,9 +46,9 @@ const DashboardPage = () => {
     };
 
     if (user?.uid) {
-      fetchEmails(); // Fetch emails when the user is authenticated
+      fetchEmails();
     }
-  }, [user]); // Only re-run when the `user` object changes
+  }, [user]);
 
   // Prevent scrolling when the modal is open
   useEffect(() => {
@@ -59,7 +59,6 @@ const DashboardPage = () => {
     };
   }, [isModalOpen]);
 
-  // If user is loading, show the loading spinner
   if (loading) {
     return (
       <div className="absolute inset-0 flex justify-center items-center bg-white/60 z-50">

@@ -114,11 +114,15 @@ export function EmailSendForm({ onSuccess }: EmailSendFormProps) {
     }
   };
 
-  return loading ? (
-    <div className="absolute inset-0 flex justify-center items-center bg-white/60 z-50">
-      <Loader2 className="h-6 w-6 animate-spin text-blue-700" />
-    </div>
-  ) : (
+  if (loading) {
+    return (
+      <div className="absolute inset-0 flex justify-center items-center bg-white/60 z-50">
+        <Loader2 className="h-6 w-6 animate-spin text-blue-700" />
+      </div>
+    );
+  }
+
+  return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-xl mx-auto mt-10">
       <div>
         <Label className="py-2" htmlFor="recipient">

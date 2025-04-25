@@ -18,11 +18,15 @@ export default function App() {
     }
   };
 
-  return loading ? (
-    <div className="absolute inset-0 flex justify-center items-center bg-white/60 z-50">
-      <Loader2 className="h-6 w-6 animate-spin text-blue-700" />
-    </div>
-  ) : (
+  if (loading) {
+    return (
+      <div className="absolute inset-0 flex justify-center items-center bg-white/60 z-50">
+        <Loader2 className="h-6 w-6 animate-spin text-blue-700" />
+      </div>
+    );
+  }
+
+  return (
     <div className="flex items-center justify-center min-h-screen py-12 md:py-24 lg:py-32 xl:py-48">
       <div className="container px-4 md:px-6">
         <div className="flex flex-col items-center space-y-4 text-center">
