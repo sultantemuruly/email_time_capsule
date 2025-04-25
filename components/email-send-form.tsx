@@ -94,6 +94,8 @@ export function EmailSendForm({ onSuccess }: EmailSendFormProps) {
         setContent("");
         setDate(null);
         setTime("12:00");
+
+        window.location.reload();
       } else {
         const errorData = await response.json();
         const errMsg =
