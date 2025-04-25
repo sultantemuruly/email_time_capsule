@@ -3,9 +3,20 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/auth-context";
 import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function App() {
   const { login, loading } = useAuth();
+  const router = useRouter();
+
+  const handleLogin = async () => {
+    try {
+      await login();
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Login failed", error);
+    }
+  };
 
   return loading ? (
     <div className="absolute inset-0 flex justify-center items-center bg-white/60 z-50">
@@ -26,7 +37,7 @@ export default function App() {
           </div>
           <div className="space-x-4">
             <Button
-              onClick={login}
+              onClick={handleLogin}
               variant="outline"
               className="bg-blue-700 text-white rounded-sm"
             >

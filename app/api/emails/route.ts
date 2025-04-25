@@ -4,8 +4,8 @@ import { EmailData } from "@/lib/types";
 
 export async function POST(req: Request) {
   try {
-    const body:EmailData = await req.json();
-    console.log("Received email body:", body); // ✅ See what's actually sent
+    const body: EmailData = await req.json();
+    console.log("Received email body:", body);
 
     const { userId, recipient, title, content, date, time, status } = body;
 

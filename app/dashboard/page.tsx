@@ -15,66 +15,66 @@ const DashboardPage = () => {
   const [emails, setEmails] = useState<EmailContainerProps[]>([]);
   const { user, loading } = useAuth();
 
-  // Fetch emails
+  // Fetch emails once the user is authenticated
   useEffect(() => {
     const fetchEmails = async () => {
-      if (user?.uid) {
-        setIsFetching(true); // Start fetching
+      if (!user?.uid) return; // Exit early if the user is not authenticated
 
-        try {
-          const response = await fetch(`/api/emails?userId=${user.uid}`);
-          const data = await response.json();
+      setIsFetching(true);
 
-          if (data?.emails && Array.isArray(data.emails)) {
-            const formattedEmails: EmailContainerProps[] = data.emails.map(
-              (email: EmailData) => {
-                const { ...props } = email;
-                return props;
-              }
-            );
-            setEmails(formattedEmails); // Set fetched emails
-          } else {
-            console.error(
-              "Failed to fetch emails or emails are not in the expected format."
-            );
-          }
-        } catch (error) {
-          console.error("Error fetching emails", error);
-        } finally {
-          setIsFetching(false); // Stop fetching after completion
+      try {
+        const response = await fetch(`/api/emails?userId=${user.uid}`);
+        const data = await response.json();
+
+        if (data?.emails && Array.isArray(data.emails)) {
+          const formattedEmails: EmailContainerProps[] = data.emails.map(
+            (email: EmailData) => {
+              return { ...email }; // Make sure the data is properly formatted
+            }
+          );
+          setEmails(formattedEmails);
+        } else {
+          console.error(
+            "Failed to fetch emails or emails are not in the expected format."
+          );
         }
+      } catch (error) {
+        console.error("Error fetching emails", error);
+      } finally {
+        setIsFetching(false);
       }
     };
 
     if (user?.uid) {
-      fetchEmails();
+      fetchEmails(); // Fetch emails when the user is authenticated
     }
-  }, [user]);
+  }, [user]); // Only re-run when the `user` object changes
 
+  // Prevent scrolling when the modal is open
   useEffect(() => {
-    // Prevent scrolling when modal is open
-    if (isModalOpen) {
-      document.body.classList.add("overflow-hidden");
-    } else {
-      document.body.classList.remove("overflow-hidden");
-    }
+    document.body.classList.toggle("overflow-hidden", isModalOpen);
 
     return () => {
       document.body.classList.remove("overflow-hidden");
     };
   }, [isModalOpen]);
 
-  // Show loader when fetching, otherwise show emails
-  return loading ? (
-    <div className="absolute inset-0 flex justify-center items-center bg-white/60 z-50">
-      <Loader2 className="h-6 w-6 animate-spin text-blue-700" />
-    </div>
-  ) : (
+  // If user is loading, show the loading spinner
+  if (loading) {
+    return (
+      <div className="absolute inset-0 flex justify-center items-center bg-white/60 z-50">
+        <Loader2 className="h-6 w-6 animate-spin text-blue-700" />
+      </div>
+    );
+  }
+
+  // Main content
+  return (
     <div>
       <div className="flex justify-between items-center px-5 md:px-10 lg:px-20 py-5">
         <div className="text-lg md:text-2xl font-semibold">Schedule Emails</div>
         <Button
-          variant={"outline"}
+          variant="outline"
           className="bg-blue-700 text-white"
           onClick={() => setIsModalOpen(true)}
         >
@@ -82,11 +82,12 @@ const DashboardPage = () => {
         </Button>
       </div>
 
+      {/* Modal for sending email */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <EmailSendForm onSuccess={() => setIsModalOpen(false)} />
       </Modal>
 
-      {/* Show loader while fetching emails */}
+      {/* Loading State while fetching emails */}
       {isFetching ? (
         <div className="absolute inset-0 flex justify-center items-center bg-white/60 z-50">
           <Loader2 className="h-6 w-6 animate-spin text-blue-700" />

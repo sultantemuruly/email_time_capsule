@@ -41,7 +41,7 @@ export function EmailSendForm({ onSuccess }: EmailSendFormProps) {
     setLoading(true);
 
     const now = new Date();
-    const minTime = addMinutes(now, 5);
+    const minTime = addMinutes(now, 2);
     const scheduled = getCombinedDateTime();
 
     if (!recipient || !title || !content || !scheduled) {
