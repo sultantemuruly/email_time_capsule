@@ -72,10 +72,17 @@ export async function POST(request: Request) {
 
     try {
       await resend.emails.send({
-        from: "Acme <onboarding@resend.dev>",
+        from: "Email Time Capsule <noreply@sultantemuruly.blog>",
         to: emailData.recipient,
         subject: emailData.title,
         text: `${userData.email} is sending you:\n\n${emailData.content}`,
+        html: `
+          <h2>${userData.email} is sending you:</h2>
+          <p>${emailData.content.replace(/\n/g, "<br>")}</p>
+        `,
+        headers: {
+          "Reply-To": userData.email,
+        },
       });
 
       await adminDB
