@@ -10,6 +10,19 @@ import { useAuth } from "@/context/auth-context";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { addMinutes, parseISO, isBefore } from "date-fns";
+
+const canEditOrDeleteEmail = (email: EmailContainerProps & { id: string }) => {
+  if (email.status !== "Pending") return false;
+
+  const now = new Date();
+  const minTime = addMinutes(now, 2); // 2 minutes from now
+
+  const emailDateTime = parseISO(`${email.date}T${email.time}`);
+
+  return isBefore(minTime, emailDateTime); // true if email is at least 2 minutes ahead
+};
+
 const DashboardPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
@@ -121,20 +134,25 @@ const DashboardPage = () => {
           {emails.length === 0 ? (
             <div className="col-span-full text-center">No emails found</div>
           ) : (
-            emails.map((email) => (
-              <EmailContainer
-                key={email.id}
-                id={email.id}
-                recipient={email.recipient}
-                title={email.title}
-                content={email.content}
-                date={email.date}
-                time={email.time}
-                status={email.status}
-                onDelete={handleDelete}
-                onEdit={handleEdit}
-              />
-            ))
+            emails.map((email) => {
+              const canEditOrDelete = canEditOrDeleteEmail(email);
+
+              return (
+                <EmailContainer
+                  key={email.id}
+                  id={email.id}
+                  recipient={email.recipient}
+                  title={email.title}
+                  content={email.content}
+                  date={email.date}
+                  time={email.time}
+                  status={email.status}
+                  canEditOrDelete={canEditOrDelete}
+                  onDelete={handleDelete}
+                  onEdit={handleEdit}
+                />
+              );
+            })
           )}
         </div>
       )}

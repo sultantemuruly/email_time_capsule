@@ -52,7 +52,7 @@ export function EmailSendForm({ onSuccess, initialData }: EmailSendFormProps) {
     }
 
     if (isBefore(scheduled, minTime)) {
-      setError("Scheduled time must be at least 5 minutes in the future.");
+      setError("Scheduled time must be at least 3 minutes in the future.");
       setLoading(false);
       return;
     }
