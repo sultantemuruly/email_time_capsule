@@ -8,56 +8,75 @@ import EmailContainer from "@/components/email-container";
 import { EmailContainerProps, EmailData } from "@/lib/types";
 import { useAuth } from "@/context/auth-context";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 const DashboardPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
-  const [emails, setEmails] = useState<EmailContainerProps[]>([]);
+  const [emails, setEmails] = useState<
+    (EmailContainerProps & { id: string })[]
+  >([]);
+  const [editingEmail, setEditingEmail] = useState<
+    (EmailContainerProps & { id: string }) | null
+  >(null);
   const { user, loading } = useAuth();
 
-  // Fetch emails once the user is authenticated
-  useEffect(() => {
-    const fetchEmails = async () => {
-      if (!user?.uid) return; // Exit early if the user is not authenticated
+  const fetchEmails = async () => {
+    if (!user?.uid) return;
 
-      setIsFetching(true);
+    setIsFetching(true);
 
-      try {
-        const response = await fetch(`/api/emails?userId=${user.uid}`);
-        const data = await response.json();
+    try {
+      const response = await fetch(`/api/emails?userId=${user.uid}`);
+      const data = await response.json();
 
-        if (data?.emails && Array.isArray(data.emails)) {
-          const formattedEmails: EmailContainerProps[] = data.emails.map(
-            (email: EmailData) => {
-              return { ...email };
-            }
-          );
-          setEmails(formattedEmails);
-        } else {
-          console.error(
-            "Failed to fetch emails or emails are not in the expected format."
-          );
-        }
-      } catch (error) {
-        console.error("Error fetching emails", error);
-      } finally {
-        setIsFetching(false);
+      if (data?.emails && Array.isArray(data.emails)) {
+        const formattedEmails: (EmailContainerProps & { id: string })[] =
+          data.emails.map((email: EmailData & { id: string }) => ({
+            recipient: email.recipient,
+            title: email.title,
+            content: email.content,
+            date: email.date,
+            time: email.time,
+            status: email.status,
+            id: email.id,
+          }));
+        setEmails(formattedEmails);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching emails", error);
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
+  useEffect(() => {
     if (user?.uid) {
       fetchEmails();
     }
   }, [user]);
 
-  // Prevent scrolling when the modal is open
-  useEffect(() => {
-    document.body.classList.toggle("overflow-hidden", isModalOpen);
+  const handleDelete = async (id: string) => {
+    try {
+      await fetch(`/api/emails?docId=${id}`, { method: "DELETE" });
+      toast.success("Email deleted successfully");
+      fetchEmails(); // Refresh emails after deletion
+    } catch (error) {
+      console.error("Failed to delete email", error);
+      toast.error("Failed to delete email");
+    }
+  };
 
-    return () => {
-      document.body.classList.remove("overflow-hidden");
-    };
-  }, [isModalOpen]);
+  const handleEdit = (email: EmailContainerProps & { id: string }) => {
+    setEditingEmail(email);
+    setIsModalOpen(true);
+  };
+
+  const handleModalSuccess = async () => {
+    setIsModalOpen(false);
+    setEditingEmail(null);
+    fetchEmails(); // Refresh emails after edit
+  };
 
   if (loading) {
     return (
@@ -67,26 +86,32 @@ const DashboardPage = () => {
     );
   }
 
-  // Main content
   return (
     <div>
+      {/* Header */}
       <div className="flex justify-between items-center px-5 md:px-10 lg:px-20 py-5">
         <div className="text-lg md:text-2xl font-semibold">Schedule Emails</div>
         <Button
           variant="outline"
           className="bg-blue-700 text-white"
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setEditingEmail(null);
+            setIsModalOpen(true);
+          }}
         >
           Send an email
         </Button>
       </div>
 
-      {/* Modal for sending email */}
+      {/* Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <EmailSendForm onSuccess={() => setIsModalOpen(false)} />
+        <EmailSendForm
+          onSuccess={handleModalSuccess}
+          initialData={editingEmail}
+        />
       </Modal>
 
-      {/* Loading State while fetching emails */}
+      {/* Emails List */}
       {isFetching ? (
         <div className="absolute inset-0 flex justify-center items-center bg-white/60 z-50">
           <Loader2 className="h-6 w-6 animate-spin text-blue-700" />
@@ -96,15 +121,18 @@ const DashboardPage = () => {
           {emails.length === 0 ? (
             <div className="col-span-full text-center">No emails found</div>
           ) : (
-            emails.map((email, index) => (
+            emails.map((email) => (
               <EmailContainer
-                key={index}
+                key={email.id}
+                id={email.id}
                 recipient={email.recipient}
                 title={email.title}
                 content={email.content}
                 date={email.date}
                 time={email.time}
                 status={email.status}
+                onDelete={handleDelete}
+                onEdit={handleEdit}
               />
             ))
           )}

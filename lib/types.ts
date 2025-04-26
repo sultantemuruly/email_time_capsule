@@ -16,6 +16,7 @@ export type EmailContainerProps = Omit<EmailData, "userId">;
 
 export type EmailSendFormProps = {
   onSuccess?: () => void;
+  initialData?: (EmailContainerProps & { id: string }) | null;
 };
 
 export interface UserData {

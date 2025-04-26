@@ -13,18 +13,19 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
-import { Loader2 } from "lucide-react";
-import { EmailSendFormProps } from "@/lib/types";
 import { toast } from "sonner";
+import { EmailSendFormProps } from "@/lib/types";
 
-export function EmailSendForm({ onSuccess }: EmailSendFormProps) {
-  const [recipient, setRecipient] = useState("");
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [date, setDate] = useState<Date | null>(null);
-  const [time, setTime] = useState("12:00");
+export function EmailSendForm({ onSuccess, initialData }: EmailSendFormProps) {
+  const [recipient, setRecipient] = useState(initialData?.recipient || "");
+  const [title, setTitle] = useState(initialData?.title || "");
+  const [content, setContent] = useState(initialData?.content || "");
+  const [date, setDate] = useState<Date | null>(
+    initialData?.date ? new Date(initialData.date) : null
+  );
+  const [time, setTime] = useState(initialData?.time || "12:00");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -62,31 +63,48 @@ export function EmailSendForm({ onSuccess }: EmailSendFormProps) {
       return;
     }
 
-    setError(""); // Clear any previous error
+    setError(""); // Clear previous error
 
     try {
       const token = await user.getIdToken();
 
+      const method = initialData ? "PUT" : "POST";
+      const body = initialData
+        ? {
+            docId: initialData.id,
+            userId: user.uid,
+            recipient,
+            title,
+            content,
+            date: format(scheduled, "yyyy-MM-dd"),
+            time: format(scheduled, "HH:mm"),
+            status: initialData.status,
+          }
+        : {
+            userId: user.uid,
+            recipient,
+            title,
+            content,
+            date: format(scheduled, "yyyy-MM-dd"),
+            time: format(scheduled, "HH:mm"),
+            status: "Pending",
+          };
+
       const response = await fetch("/api/emails", {
-        method: "POST",
+        method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          userId: user.uid,
-          recipient,
-          title,
-          content,
-          date: format(scheduled, "yyyy-MM-dd"),
-          time: format(scheduled, "HH:mm"),
-          status: "Pending",
-        }),
+        body: JSON.stringify(body),
       });
 
       if (response.ok) {
-        toast.success("Email scheduled successfully!");
-
+        toast.success(
+          initialData
+            ? "Email updated successfully!"
+            : "Email scheduled successfully!"
+        );
         onSuccess?.();
 
         setRecipient("");
@@ -105,10 +123,9 @@ export function EmailSendForm({ onSuccess }: EmailSendFormProps) {
         toast.error(errMsg);
       }
     } catch (err) {
-      const fallbackMessage = "An unexpected error occurred.";
-      setError(fallbackMessage);
       console.error("Fetch error:", err);
-      toast.error(fallbackMessage);
+      setError("An unexpected error occurred.");
+      toast.error("An unexpected error occurred.");
     } finally {
       setLoading(false);
     }
@@ -211,7 +228,7 @@ export function EmailSendForm({ onSuccess }: EmailSendFormProps) {
         type="submit"
         className="w-full bg-blue-700 hover:bg-white hover:text-black"
       >
-        Schedule Email
+        {initialData ? "Update Email" : "Schedule Email"}
       </Button>
     </form>
   );
