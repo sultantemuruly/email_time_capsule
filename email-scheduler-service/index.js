@@ -4,7 +4,6 @@ import { adminDB } from './firebase-admin.js';
 
 const app = express();
 const port = process.env.PORT || 5000;
-
 const MAIN_APP_URL = process.env.MAIN_APP_URL || 'http://localhost:3000';
 
 let isCheckingEmails = false;
@@ -14,7 +13,7 @@ app.get('/', (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
+  console.log(`Server running at http://localhost:${port}`);
   startClock();
 });
 
@@ -22,7 +21,7 @@ function startClock() {
   const now = Date.now();
   const delayUntilNextMinute = 60000 - (now % 60000);
 
-  console.log(`First check will happen in ${Math.floor(delayUntilNextMinute / 1000)} seconds`);
+  console.log(`First email check in ${Math.floor(delayUntilNextMinute / 1000)} seconds`);
 
   setTimeout(() => {
     checkEmails();
@@ -30,7 +29,9 @@ function startClock() {
     const intervalId = setInterval(() => {
       const currentSecond = new Date().getSeconds();
       if (currentSecond !== 0) {
-        console.log(`Realigning clock, current second is ${currentSecond}`);
+        if (currentSecond % 10 === 0) { // Only log realign message every 10 seconds
+          console.log(`Realigning clock (current second: ${currentSecond})`);
+        }
         clearInterval(intervalId);
         startClock();
       } else {
@@ -42,7 +43,7 @@ function startClock() {
 
 async function checkEmails() {
   if (isCheckingEmails) {
-    console.log('Previous check still running, skipping this minute.');
+    console.log('⏳ Previous check still running, skipping...');
     return;
   }
 
@@ -52,7 +53,7 @@ async function checkEmails() {
   const currentDate = now.toFormat('yyyy-LL-dd');
   const currentTime = now.toFormat('HH:mm');
 
-  console.log('Checking at Almaty time:', now.toFormat('yyyy-LL-dd HH:mm:ss'));
+  console.log(`Checking pending emails at ${now.toFormat('yyyy-LL-dd HH:mm:ss')}`);
 
   try {
     const snapshot = await adminDB.collection('emails')
@@ -63,60 +64,51 @@ async function checkEmails() {
 
     snapshot.forEach(doc => {
       const data = doc.data();
-
-      const isTodayOrBefore = data.date <= currentDate;
-      const isTimeNowOrBefore = data.time <= currentTime;
-
-      if (isTodayOrBefore && isTimeNowOrBefore) {
-        console.log(`${doc.id} should be sent now`);
-        pendingEmails.push({
-          id: doc.id,
-          data
-        });
-      } else {
-        console.log(`${doc.id} not ready yet (scheduled for later)`);
+      if (data.date <= currentDate && data.time <= currentTime) {
+        pendingEmails.push({ id: doc.id, data });
       }
     });
+
+    if (pendingEmails.length) {
+      console.log(`Found ${pendingEmails.length} pending emails to send.`);
+    } else {
+      console.log('No emails to send at this time.');
+    }
 
     for (const email of pendingEmails) {
       await sendEmailViaAPI(email.id);
     }
 
   } catch (error) {
-    console.error('Error in checkEmails:', error);
+    console.error('Error checking emails:', error.message);
   } finally {
     isCheckingEmails = false;
   }
 }
 
-
 async function sendEmailViaAPI(documentId) {
   try {
-    console.log(`Sending email request to API for document ${documentId}`);
+    console.log(`Sending email for document ${documentId}`);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 sec timeout
 
     const response = await fetch(`${MAIN_APP_URL}/api/email-delivery`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ documentId }),
       signal: controller.signal,
     });
 
     clearTimeout(timeoutId);
 
-    const result = await response.json();
-
     if (!response.ok) {
-      console.error(`API Error (${response.status}):`, result.message);
+      console.error(`API Error (${response.status}) for ${documentId}:`, await response.text());
     } else {
-      console.log(`Successfully processed email ${documentId}`);
+      console.log(`Email ${documentId} sent successfully`);
     }
 
   } catch (error) {
-    console.error(`Network or system error sending ${documentId}:`, error.name, error.message);
+    console.error(`Network error for ${documentId}:`, error.name, error.message);
   }
 }
