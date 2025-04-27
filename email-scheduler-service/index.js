@@ -3,7 +3,7 @@ import { DateTime } from 'luxon';
 import { adminDB } from './firebase-admin.js';
 
 const app = express();
-const port = 3008;
+const port = process.env.PORT || 5000;
 
 const MAIN_APP_URL = process.env.MAIN_APP_URL || 'http://localhost:3000';
 
@@ -52,10 +52,6 @@ async function checkEmails() {
   const currentDate = now.toFormat('yyyy-LL-dd');
   const currentTime = now.toFormat('HH:mm');
 
-  const threeMinutesAgo = now.minus({ minutes: 3 });
-  const reprocessDate = threeMinutesAgo.toFormat('yyyy-LL-dd');
-  const reprocessTime = threeMinutesAgo.toFormat('HH:mm');
-
   console.log('Checking at Almaty time:', now.toFormat('yyyy-LL-dd HH:mm:ss'));
 
   try {
@@ -72,18 +68,13 @@ async function checkEmails() {
       const isTimeNowOrBefore = data.time <= currentTime;
 
       if (isTodayOrBefore && isTimeNowOrBefore) {
-        const shouldReprocess = (data.date < reprocessDate) ||
-                                (data.date === reprocessDate && data.time <= reprocessTime);
-
-        if (shouldReprocess) {
-          console.log(`${doc.id} should be sent now (more than 3 minutes old)`);
-          pendingEmails.push({
-            id: doc.id,
-            data
-          });
-        } else {
-          console.log(`${doc.id} detected but within 3-minute buffer window`);
-        }
+        console.log(`${doc.id} should be sent now`);
+        pendingEmails.push({
+          id: doc.id,
+          data
+        });
+      } else {
+        console.log(`${doc.id} not ready yet (scheduled for later)`);
       }
     });
 
@@ -97,6 +88,7 @@ async function checkEmails() {
     isCheckingEmails = false;
   }
 }
+
 
 async function sendEmailViaAPI(documentId) {
   try {
