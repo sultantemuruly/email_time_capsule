@@ -8,6 +8,7 @@ Instructions:
 - If the input text contains only emojis (no alphabetic letters), return it unchanged.
 - Preserve punctuation marks (.,!? etc.) correctly relative to emojis.
 - Output only the final result in pure JSON format like: { "new_content": "..." }
+- Always respond with emoji if the word doesnt exist or doesnt make sense then add any random emoji
 
 Do NOT add any normal text or explanation in the output.
 

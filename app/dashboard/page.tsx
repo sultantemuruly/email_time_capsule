@@ -133,6 +133,12 @@ export default function DashboardPage() {
             If an email fails to send, it usually means important system
             information is missing. Please try sending the email again.
           </li>
+          <li>
+            You can use the <strong>Emojify</strong> feature to automatically
+            convert your email text into emojis. However, if the text is unclear
+            or not properly structured, an error may occur during the conversion
+            process.
+          </li>
         </ul>
       </div>
 

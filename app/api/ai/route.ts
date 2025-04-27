@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     const response = await model.call([
       {
         role: "system",
-        content: "You are an assistant that rewrites text into emoji text.",
+        content: `You are an assistant that rewrites user text into a JSON format. Respond ONLY in JSON like: {"new_content": "🎉🚀😁"}. No other text, no explanation.`,
       },
       {
         role: "user",
@@ -51,16 +51,22 @@ export async function POST(req: NextRequest) {
         ? response.text
         : JSON.stringify(response.text);
 
-    let parsedResult;
-    try {
-      parsedResult = JSON.parse(rawContent);
-    } catch (err) {
-      console.error("Failed to parse model response:", response, "Error:", err);
-      return NextResponse.json(
-        { error: "Failed to parse model output." },
-        { status: 500 }
-      );
-    }
+        let parsedResult;
+        try {
+          const jsonMatch = rawContent.match(/{[^}]+}/);
+          if (jsonMatch) {
+            parsedResult = JSON.parse(jsonMatch[0]);
+          } else {
+            parsedResult = JSON.parse(rawContent);
+          }
+        } catch (err) {
+          console.error("Failed to parse model response:", response, "Error:", err);
+          return NextResponse.json(
+            { error: "Failed to parse model output." },
+            { status: 500 }
+          );
+        }
+        
 
     // Validate that new_content exists
     if (!parsedResult.new_content) {
