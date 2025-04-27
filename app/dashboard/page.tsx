@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { EmailSendForm } from "@/components/email-send-form";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/custom/modal";
@@ -9,32 +9,32 @@ import { EmailContainerProps, EmailData } from "@/lib/types";
 import { useAuth } from "@/context/auth-context";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-
 import { addMinutes, parseISO, isBefore } from "date-fns";
 
+// Check if the email can still be edited/deleted
 const canEditOrDeleteEmail = (email: EmailContainerProps & { id: string }) => {
   if (email.status !== "Pending") return false;
 
   const now = new Date();
-  const minTime = addMinutes(now, 2); // 2 minutes from now
+  const minTime = addMinutes(now, 2); // 2 minutes ahead
 
   const emailDateTime = parseISO(`${email.date}T${email.time}`);
-
-  return isBefore(minTime, emailDateTime); // true if email is at least 2 minutes ahead
+  return isBefore(minTime, emailDateTime); // true if at least 3 minutes in future
 };
 
-const DashboardPage = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isFetching, setIsFetching] = useState(false);
+export default function DashboardPage() {
+  const { user, loading } = useAuth();
   const [emails, setEmails] = useState<
     (EmailContainerProps & { id: string })[]
   >([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmail, setEditingEmail] = useState<
     (EmailContainerProps & { id: string }) | null
   >(null);
-  const { user, loading } = useAuth();
+  const [isFetching, setIsFetching] = useState(false);
 
-  const fetchEmails = async () => {
+  // Fetch emails function wrapped with useCallback
+  const fetchEmails = useCallback(async () => {
     if (!user?.uid) return;
 
     setIsFetching(true);
@@ -44,8 +44,8 @@ const DashboardPage = () => {
       const data = await response.json();
 
       if (data?.emails && Array.isArray(data.emails)) {
-        const formattedEmails: (EmailContainerProps & { id: string })[] =
-          data.emails.map((email: EmailData & { id: string }) => ({
+        const formattedEmails = data.emails.map(
+          (email: EmailData & { id: string }) => ({
             recipient: email.recipient,
             title: email.title,
             content: email.content,
@@ -53,27 +53,30 @@ const DashboardPage = () => {
             time: email.time,
             status: email.status,
             id: email.id,
-          }));
+          })
+        );
         setEmails(formattedEmails);
       }
     } catch (error) {
       console.error("Error fetching emails", error);
+      toast.error("Failed to load emails");
     } finally {
       setIsFetching(false);
     }
-  };
+  }, [user?.uid]);
 
+  // Initial fetch
   useEffect(() => {
     if (user?.uid) {
       fetchEmails();
     }
-  }, [user]);
+  }, [user?.uid, fetchEmails]);
 
   const handleDelete = async (id: string) => {
     try {
       await fetch(`/api/emails?docId=${id}`, { method: "DELETE" });
       toast.success("Email deleted successfully");
-      fetchEmails(); // Refresh emails after deletion
+      fetchEmails();
     } catch (error) {
       console.error("Failed to delete email", error);
       toast.error("Failed to delete email");
@@ -88,7 +91,7 @@ const DashboardPage = () => {
   const handleModalSuccess = async () => {
     setIsModalOpen(false);
     setEditingEmail(null);
-    fetchEmails(); // Refresh emails after edit
+    fetchEmails();
   };
 
   if (loading) {
@@ -101,7 +104,7 @@ const DashboardPage = () => {
 
   return (
     <div className="pb-20">
-      {/* Warnings / Info Box */}
+      {/* Warnings */}
       <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-5 md:px-10 lg:px-20 py-5 rounded-md mx-5 md:mx-10 lg:mx-20 mt-5 flex flex-col gap-3">
         <div className="flex items-center gap-2 mb-2">
           <AlertTriangle className="w-6 h-6 text-yellow-600" />
@@ -119,16 +122,16 @@ const DashboardPage = () => {
           </li>
           <li>
             You can only <strong>edit emails</strong> that are scheduled to be
-            sent at least <strong>3 minutes</strong> from the current time.
+            sent at least <strong>3 minutes</strong> from now.
           </li>
           <li>
-            If the scheduled time of an email has already passed, the system
-            will automatically attempt to send it as soon as possible. No need
-            to reschedule manually.
+            If an email&apos;s scheduled time has already passed, the system
+            will attempt to send it automatically as soon as possible. No manual
+            action is needed.
           </li>
           <li>
-            If an email fails to send, it usually indicates missing critical
-            system information. Please try sending the email again manually.
+            If an email fails to send, it usually means important system
+            information is missing. Please try sending the email again.
           </li>
         </ul>
       </div>
@@ -138,13 +141,13 @@ const DashboardPage = () => {
         <div className="text-lg md:text-2xl font-semibold">Schedule Emails</div>
         <Button
           variant="outline"
-          className="bg-blue-700 text-white"
+          className="bg-blue-700 text-white hover:bg-white hover:text-blue-700"
           onClick={() => {
             setEditingEmail(null);
             setIsModalOpen(true);
           }}
         >
-          Send an email
+          Send an Email
         </Button>
       </div>
 
@@ -156,15 +159,17 @@ const DashboardPage = () => {
         />
       </Modal>
 
-      {/* Emails List */}
+      {/* Email List */}
       {isFetching ? (
-        <div className="absolute inset-0 flex justify-center items-center bg-white/60 z-50">
+        <div className="flex justify-center items-center mt-10">
           <Loader2 className="h-6 w-6 animate-spin text-blue-700" />
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-5 md:px-10 lg:px-20 pb-5">
           {emails.length === 0 ? (
-            <div className="col-span-full text-center">No emails found</div>
+            <div className="col-span-full text-center text-gray-500 mt-10">
+              No emails found.
+            </div>
           ) : (
             emails.map((email) => {
               const canEditOrDelete = canEditOrDeleteEmail(email);
@@ -190,6 +195,4 @@ const DashboardPage = () => {
       )}
     </div>
   );
-};
-
-export default DashboardPage;
+}
