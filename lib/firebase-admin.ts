@@ -18,6 +18,15 @@ export const initializeFirebaseAdmin = () => {
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKeyRaw = process.env.FIREBASE_PRIVATE_KEY;
 
+  // Debugging output
+  console.log("!!!Firebase ENV Check!!!");
+  console.log("FIREBASE_PROJECT_ID:", projectId);
+  console.log("FIREBASE_CLIENT_EMAIL:", clientEmail);
+  console.log(
+    "FIREBASE_PRIVATE_KEY (first 100 chars):",
+    privateKeyRaw?.slice(0, 100) + "..."
+  );
+
   if (!projectId || !clientEmail || !privateKeyRaw) {
     throw new Error(
       `Firebase credentials missing: ${!projectId ? "FIREBASE_PROJECT_ID " : ""}${
@@ -27,7 +36,11 @@ export const initializeFirebaseAdmin = () => {
   }
 
   // Process private key to handle potential format issues
-  const privateKey = privateKeyRaw.replace(/\\n/g, "\n");
+  const privateKey = privateKeyRaw
+    .replace(/\\n/g, "\n") // Handle common case
+    .replace(/\\\\n/g, "\n") // Handle double-escaped
+    .replace(/\r\n/g, "\n"); // Normalize Windows line endings
+  console.log("PRIVATE KEY AFTER REPLACE:", privateKey);
 
   try {
     admin.initializeApp({
