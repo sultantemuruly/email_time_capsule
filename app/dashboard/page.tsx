@@ -7,7 +7,7 @@ import { Modal } from "@/components/ui/custom/modal";
 import EmailContainer from "@/components/email-container";
 import { EmailContainerProps, EmailData } from "@/lib/types";
 import { useAuth } from "@/context/auth-context";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 import { addMinutes, parseISO, isBefore } from "date-fns";
@@ -100,7 +100,39 @@ const DashboardPage = () => {
   }
 
   return (
-    <div>
+    <div className="pb-20">
+      {/* Warnings / Info Box */}
+      <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-5 md:px-10 lg:px-20 py-5 rounded-md mx-5 md:mx-10 lg:mx-20 mt-5 flex flex-col gap-3">
+        <div className="flex items-center gap-2 mb-2">
+          <AlertTriangle className="w-6 h-6 text-yellow-600" />
+          <span className="font-semibold text-lg">Important Information</span>
+        </div>
+        <ul className="list-disc list-inside space-y-2 text-sm md:text-base">
+          <li>
+            Emails can only be scheduled at least <strong>3 minutes</strong>{" "}
+            into the future. Please ensure your scheduled time is set
+            accordingly.
+          </li>
+          <li>
+            Once a scheduled email is <strong>deleted</strong>, it cannot be
+            recovered. Please double-check before deleting.
+          </li>
+          <li>
+            You can only <strong>edit emails</strong> that are scheduled to be
+            sent at least <strong>3 minutes</strong> from the current time.
+          </li>
+          <li>
+            If the scheduled time of an email has already passed, the system
+            will automatically attempt to send it as soon as possible. No need
+            to reschedule manually.
+          </li>
+          <li>
+            If an email fails to send, it usually indicates missing critical
+            system information. Please try sending the email again manually.
+          </li>
+        </ul>
+      </div>
+
       {/* Header */}
       <div className="flex justify-between items-center px-5 md:px-10 lg:px-20 py-5">
         <div className="text-lg md:text-2xl font-semibold">Schedule Emails</div>
