@@ -4,6 +4,7 @@ import { EmailData, EmailStatus, UserData } from "@/lib/types";
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY); // Server-side only
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
